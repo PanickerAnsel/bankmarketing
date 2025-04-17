@@ -1,0 +1,20 @@
+---
+title: "STAT_4870_Project"
+author: "Waleed Abdulla"
+date: "2025-04-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+Bank <- read.csv("C:/Users/13147/Downloads/bank+marketing/bank-additional/bank-additional/bank-additional-full.csv", sep = ";")
+
+Bank
+
+#Simple/Multiple Lin Reg doesn't count but can be used for comparison
+#PCA
+#AIC
+#BIC
+#Log Regression
+#QDA/LDA
+#kNN
+```
