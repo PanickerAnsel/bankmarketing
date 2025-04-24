@@ -22,9 +22,9 @@ library(fastDummies)
 ```
 
 
-```{r setup, include=FALSE}
+```{r}
 Bank <- read.csv("C:/Users/13147/Downloads/bank-full.csv", sep = ";")
-Bank
+Bank %>% head(3)
 ```
 
 Step 1: Literature review and theoretical model - What question you are trying to answer?
