@@ -5,11 +5,6 @@ date: "2025-04-17"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-Bank <- read.csv("C:/Users/13147/Downloads/bank+marketing/bank-additional/bank-additional/bank-additional-full.csv", sep = ";")
-
-Bank
-
 #Simple/Multiple Lin Reg doesn't count but can be used for comparison
 #PCA
 #AIC
@@ -17,4 +12,97 @@ Bank
 #Log Regression
 #QDA/LDA
 #kNN
+
+New Libraries: fastDummies
+
+Libraries
+```{r, include=FALSE}
+library(fpp3)
+library(fastDummies)
 ```
+
+
+```{r setup, include=FALSE}
+Bank <- read.csv("C:/Users/13147/Downloads/bank-full.csv", sep = ";")
+Bank
+```
+
+Step 1: Literature review and theoretical model - What question you are trying to answer?
+
+ - Goal: Predict if the client will subscribe to a term deposit (variable y).
+ - Goal: Find the key predictors 
+ - Goal: Create a good applied regression model.
+ 
+ 
+Step 2: Clean our data.
+
+  We need to create indicator variables for our categorical predictors
+  
+```{r}
+Bank %>% select_if(is.character) %>% head(3)
+```
+There are 10 categorical indicators. Luckily, the fastDummies package automatically creates dummy variables for each categorical indicators.
+
+```{r}
+BankN <- Bank %>% dummy_cols() %>% select(-c("job","marital","education","default","housing","loan","contact",
+                                    "month","poutcome","y_no","y_yes")) %>% as.data.frame()
+str(BankN)
+```
+
+Now, if we want to use a categorical variable, we'll use a preset filter that locates the relevant columns. We can even create a matrix. For example, say we want to use the *job* column. 
+
+```{r}
+BankN %>% select(starts_with("job")) %>% head()
+BankN %>% select(starts_with("job")) %>% as.matrix() %>% head()
+```
+We need to fix the binary categorical variables to be in one column instead of two.
+
+```{r}
+BankN <- BankN %>% rename(default = default_yes, housingLoan = housing_yes, personalLoan = loan_yes) %>%
+  select(-c(default_no, housing_no, loan_no))
+```
+
+The *campaign* column is the number of contacts performed *during* this campaign and the *previous* column is the number of contacts performed *before* this campaign. Let's combine both to get the total number of contacts
+
+```{r}
+BankN <- BankN %>% mutate(contacts = campaign + previous) %>% select(-c("campaign","previous"))
+```
+
+The *day* column and the *month* column are linked, so we can remove the *day* column all together.
+
+```{r}
+BankN <- BankN %>% select(-day)
+```
+
+Final dataset (for now)
+```{r}
+BankN %>% head()
+```
+
+
+
+
+---- IGNORE ----
+
+Before checking for assumptions, let's create a quick, simple linear regression and check the plot
+
+```{r}
+
+```
+
+ 
+Step 2: Make sure our data meets the assumptions.
+  For now, lets check the four main assumptions for *linear regression*
+  
+  First Assumption: Independence of Observations
+
+```{r}
+
+```
+
+  Second Assumption: Normality
+  
+```{r}
+
+```
+---- IGNORE ----
