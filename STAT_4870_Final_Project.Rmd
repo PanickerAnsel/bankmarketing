@@ -13,12 +13,13 @@ output: html_document
 #QDA/LDA
 #kNN
 
-New Libraries: fastDummies
+New Libraries: fastDummies, patchwork
 
 Libraries
 ```{r, include=FALSE}
 library(fpp3)
 library(fastDummies)
+library(patchwork)
 ```
 
 
@@ -27,48 +28,96 @@ Bank <- read.csv("C:/Users/13147/Downloads/bank-full.csv", sep = ";")
 Bank %>% head(3)
 ```
 
-Step 1: Literature review and theoretical model - What question you are trying to answer?
+Step 1: What question are we trying to answer?
 
- - Goal: Predict if the client will subscribe to a term deposit (variable y).
- - Goal: Find the key predictors 
- - Goal: Create a good applied regression model.
+ - Predict if the client will subscribe to a term deposit (variable y).
+    - Find the key predictors 
+    - Create a good applied regression model.
  
  
 Step 2: Clean our data.
 
-  We need to create indicator variables for our categorical predictors
+Before creating indicator variables for our categorical predictors, we need to find outliers. With categorical predictors, outliers are based on the size of the variable relative to the size of the entire column. For example:
   
 ```{r}
-Bank %>% select_if(is.character) %>% head(3)
+Bank %>% ggplot(aes(x = job)) +
+geom_bar(fill = "blue") + labs(x='Team') +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-There are 10 categorical indicators. Luckily, the fastDummies package automatically creates dummy variables for each categorical indicators.
+
+The "unknown" variable is undoubtebly an outlier since it has a small count compared to the 40,000+ dataset. Let's remove it and look at the following bar plot:
 
 ```{r}
-BankN <- Bank %>% dummy_cols() %>% select(-c("job","marital","education","default","housing","loan","contact",
-                                    "month","poutcome","y_no","y_yes")) %>% as.data.frame()
+Bank <- Bank %>% filter(job != "unknown")
+Bank %>% ggplot(aes(x = job)) +
+geom_bar(fill = "blue") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Now let's look at the other categorical variables for potential outliers.
+
+```{r}
+p1 <- Bank %>% ggplot(aes(x = marital)) + geom_bar(fill = "blue")
+p2 <- Bank %>% ggplot(aes(x = default)) + geom_bar(fill = "blue")
+p3 <- Bank %>% ggplot(aes(x = housing)) + geom_bar(fill = "blue")
+p4 <- Bank %>% ggplot(aes(x = loan)) + geom_bar(fill = "blue")
+p5 <- Bank %>% ggplot(aes(x = contact)) + geom_bar(fill = "blue")
+p6 <- Bank %>% ggplot(aes(x = month)) + geom_bar(fill = "blue") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p7 <- Bank %>% ggplot(aes(x = poutcome)) + geom_bar(fill = "blue")
+
+# Arrange them in a grid
+(p1 | p2 | p3) / (p4 | p5 | p6) / p7
+
+```
+
+There are no outliers in the marital variable. The default variable does have outliers, but we predict that whether or not someone defaulted on a loan highly affects whether or not they will subscribe to a term deposit, so we will keep it. There are no outliers in the housing, loan, or contact variables. Since months are temporal, removing outliers may affect the regression model. Finally, since the poutcome variable consists mostly of unknown, we'll remove it since it provides no real information.
+
+```{r}
+Bank <- Bank %>% select(-poutcome)
+```
+
+Now we need to create indicator variables for our categorical predictors
+  
+```{r}
+Bank %>% select_if(is.character) %>% select(-y) %>% head(3)
+```
+There are 8 categorical indicators. Luckily, the fastDummies package automatically creates dummy variables for each categorical indicator. The package also allows us to remove the first dummy of every variable such that only n-1 dummies remain, avoiding multicollinearity issues in the future.
+
+```{r}
+BankN <- Bank %>% dummy_cols(select_columns = c("job", "marital", "education", "default", "housing", "loan", "contact", "y"), remove_first_dummy = TRUE) %>% select(-c("job", "marital", "education", "default", "housing", "loan", "contact","y")) %>% as.data.frame()
+
 str(BankN)
 ```
 
-Now, if we want to use a categorical variable, we'll use a preset filter that locates the relevant columns. We can even create a matrix. For example, say we want to use the *job* column. 
+Now, if we want to use a categorical variable, we'll use a preset filter that locates the relevant columns. We can even create a matrix. For example, say we want to use the *job* column. Note that if a row contains all 0 within the "job" columns, the job is "unknown"
 
 ```{r}
-BankN %>% select(starts_with("job")) %>% head()
 BankN %>% select(starts_with("job")) %>% as.matrix() %>% head()
 ```
-We need to fix the binary categorical variables to be in one column instead of two.
+We rename the binary variables:
 
 ```{r}
-BankN <- BankN %>% rename(default = default_yes, housingLoan = housing_yes, personalLoan = loan_yes) %>%
-  select(-c(default_no, housing_no, loan_no))
+BankN <- BankN %>% rename(default = default_yes, housingLoan = housing_yes, personalLoan = loan_yes, y = y_yes)
 ```
 
-The *campaign* column is the number of contacts performed *during* this campaign and the *previous* column is the number of contacts performed *before* this campaign. Let's combine both to get the total number of contacts
+Since the "month" variable is an ordinal variable, we can change the months to 1 through 12.
 
 ```{r}
-BankN <- BankN %>% mutate(contacts = campaign + previous) %>% select(-c("campaign","previous"))
+monthToNum <- c("jan" = 1, "feb" = 2, "mar" = 3, "apr" = 4, "may" = 5, "jun" = 6,
+                "jul" = 7, "aug" = 8, "sep" = 9, "oct" = 10, "nov" = 11, "dec" = 12)
+
+BankN <- BankN %>% mutate(month = as.integer(monthToNum[month]))
 ```
 
-The *day* column and the *month* column are linked, so we can remove the *day* column all together.
+
+The *campaign* column is the number of contacts performed *during* this campaign and the *previous* column is the number of contacts performed *before* this campaign. Let's combine both to get the total number of contacts. Since the "pdays" column relies on both columns, we'll remove that too.
+
+```{r}
+BankN <- BankN %>% mutate(contacts = campaign + previous) %>% select(-c("campaign","previous", "pdays"))
+```
+
+The *day* column and the *month* column are linked, so we can remove the *day* column all together. 
 
 ```{r}
 BankN <- BankN %>% select(-day)
@@ -79,10 +128,61 @@ Final dataset (for now)
 BankN %>% head()
 ```
 
+Now let's look for obvious outliers within the quantitative variables:
+
+age, balance, duration, and pdays (# of days before last campaign contact [-1 if N/A])
+
+```{r}
+p1 <- BankN %>% ggplot(aes(x = duration)) + geom_histogram()
+p2 <- BankN %>% ggplot(aes(x = "", y = balance)) + geom_boxplot()
+out <- boxplot.stats(BankN$balance)$out
+BankN <- BankN %>% filter(!(balance %in% out))
+p3 <- BankN %>% ggplot(aes(x = "", y = balance)) + geom_boxplot()
+(p1 | p2 | p3)
+
+p4 <- BankN %>% ggplot(aes(x=age)) + geom_histogram()
+p5 <- BankN %>% ggplot(aes(x = "", y = age)) + geom_boxplot()
+(p4 | p5)
+
+p6 <- BankN %>% ggplot(aes(x = duration)) + geom_histogram()
+p7 <- BankN %>% ggplot(aes(x = "", y = duration)) + geom_boxplot()
+out <- boxplot.stats(BankN$duration)$out
+BankN <- BankN %>% filter(!(duration %in% out))
+p8 <- BankN %>% ggplot(aes(x = "", y = duration)) + geom_boxplot()
+(p6 | p7 | p8)
+```
+
+**IGNORE code below**
+
+```{r}
+attach(BankN)
+plot(x = tapply(y, age, var), type = "l", xlab = "Age Variance")
+
+plot(x = tapply(y, age, mean), type = "l", xlab = "Age mean")
+
+detach()
+```
 
 
 
----- IGNORE ----
+```{r}
+jobM <- BankN %>% select(starts_with("job")) %>% as.matrix()
+
+```
+
+
+
+```{r}
+fit <- lm(BankN$y ~ BankN$age)
+r = fit$residuals
+f = fitted(fit)
+plot(f, r, pch = 18, xlab = "Fitted Values", ylab = "Residuals") + abline(h = 0, col = "red", lwd = 2)
+```
+
+```{r}
+#BBIC <- step(fit,direction="backward",scope=list(lower=~Public,upper=fit), data=X)
+```
+
 
 Before checking for assumptions, let's create a quick, simple linear regression and check the plot
 
@@ -105,4 +205,3 @@ Step 2: Make sure our data meets the assumptions.
 ```{r}
 
 ```
----- IGNORE ----
