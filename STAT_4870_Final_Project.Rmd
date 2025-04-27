@@ -20,12 +20,14 @@ Libraries
 library(fpp3)
 library(fastDummies)
 library(patchwork)
+library(rsample)
+library(factoextra)
 ```
 
 
 ```{r}
-Bank <- read.csv("C:/Users/13147/Downloads/bank-full.csv", sep = ";")
-Bank %>% head(3)
+Bank <- read.csv("C:/Users/Panic/ML/appliedregression/bankmarketing/bank-full.csv", sep = ";")
+Bank %>% tail()
 ```
 
 Step 1: What question are we trying to answer?
@@ -45,7 +47,7 @@ geom_bar(fill = "blue") + labs(x='Team') +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-The "unknown" variable is undoubtebly an outlier since it has a small count compared to the 40,000+ dataset. Let's remove it and look at the following bar plot:
+The "unknown" variable is undoubtedly an outlier since it has a small count compared to the 40,000+ dataset. Let's remove it and look at the following bar plot:
 
 ```{r}
 Bank <- Bank %>% filter(job != "unknown")
@@ -126,6 +128,7 @@ BankN <- BankN %>% select(-day)
 Final dataset (for now)
 ```{r}
 BankN %>% head()
+Bank %>% count(y)
 ```
 
 Now let's look for obvious outliers within the quantitative variables:
@@ -151,6 +154,46 @@ BankN <- BankN %>% filter(!(duration %in% out))
 p8 <- BankN %>% ggplot(aes(x = "", y = duration)) + geom_boxplot()
 (p6 | p7 | p8)
 ```
+
+Let's split the data. 
+
+```{r}
+set.seed(100)
+split <- initial_split(Bank, prop = 0.7)
+train <- training(split)
+test <- testing(split)
+
+dim(train)
+dim(test)
+```
+Now let's make a PCA dataset to reduce dimensionality and normalize it.
+
+```{r}
+numeric_vars <- Bank |>
+  select(age, balance, duration, campaign, pdays, previous)
+
+numeric_scaled <- scale(numeric_vars)
+
+pca_result <- prcomp(numeric_scaled, center = TRUE, scale. = TRUE)
+
+summary(pca_result)
+
+library(factoextra)
+
+#Show explained variance %
+fviz_eig(pca_result, addlabels = TRUE)
+
+pca_components <- as.data.frame(pca_result$x[, 1:4])
+colnames(pca_components) <- c("PC1", "PC2", "PC3", "PC4")
+
+BankPCA <- Bank |>
+  select(-age, -balance, -duration, -campaign, -pdays, -previous) |>
+  bind_cols(pca_components)
+BankPCA
+
+```
+
+
 
 **IGNORE code below**
 
