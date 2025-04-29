@@ -169,8 +169,8 @@ dim(test)
 Now let's make a PCA dataset to reduce dimensionality and normalize it.
 
 ```{r}
-numeric_vars <- Bank |>
-  select(age, balance, duration, campaign, pdays, previous)
+numeric_vars <- BankN |>
+  select(age, balance, duration, month)
 
 numeric_scaled <- scale(numeric_vars)
 
@@ -183,16 +183,25 @@ library(factoextra)
 #Show explained variance %
 fviz_eig(pca_result, addlabels = TRUE)
 
-pca_components <- as.data.frame(pca_result$x[, 1:4])
-colnames(pca_components) <- c("PC1", "PC2", "PC3", "PC4")
-
-BankPCA <- Bank |>
-  select(-age, -balance, -duration, -campaign, -pdays, -previous) |>
+pca_components <- as.data.frame(pca_result$x[, 1:3])
+colnames(pca_components) <- c("PC1", "PC2", "PC3")
+BankN
+BankPCA <- BankN |>
+  select(-age, -balance, -duration, -month) |>
   bind_cols(pca_components)
 BankPCA
-
 ```
 
+```{r}
+
+lgmodel <- glm(y ~ ., data = BankN, family = binomial)
+
+pcalgmodel <- glm(y ~ ., data = BankPCA, family = binomial)
+
+lgmodel
+
+pcalgmodel
+```
 
 
 **IGNORE code below**
