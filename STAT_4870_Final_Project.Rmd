@@ -17,16 +17,18 @@ New Libraries: fastDummies, patchwork
 
 Libraries
 ```{r, include=FALSE}
+library(MASS)
 library(fpp3)
 library(fastDummies)
 library(patchwork)
 library(rsample)
 library(factoextra)
+library(car)
 ```
 
 
 ```{r}
-Bank <- read.csv("C:/Users/Panic/ML/appliedregression/bankmarketing/bank-full.csv", sep = ";")
+Bank <- read.csv("C:/Users/13147/Documents/bankmarketing/bank-full.csv", sep = ";")
 Bank %>% tail()
 ```
 
@@ -159,9 +161,14 @@ Let's split the data.
 
 ```{r}
 set.seed(100)
-split <- initial_split(Bank, prop = 0.7)
+split <- initial_split(BankN, prop = 0.7)
 train <- training(split)
 test <- testing(split)
+
+trainx <- train %>% dplyr::select(-y)
+trainy <- train %>% pull(y)
+testx <- test %>% dplyr::select(-y)
+testy <- test %>% pull(y)
 
 dim(train)
 dim(test)
@@ -203,57 +210,16 @@ lgmodel
 pcalgmodel
 ```
 
-
-**IGNORE code below**
-
-```{r}
-attach(BankN)
-plot(x = tapply(y, age, var), type = "l", xlab = "Age Variance")
-
-plot(x = tapply(y, age, mean), type = "l", xlab = "Age mean")
-
-detach()
-```
-
-
+Let's use LDA and QDA
 
 ```{r}
-jobM <- BankN %>% select(starts_with("job")) %>% as.matrix()
+model1 = qda(trainx, trainy)
+yhat <- predict(model1, newdata=testx)$class
+table(yhat, testy)
+mean(yhat == testy) #83.52 accuracy
 
-```
-
-
-
-```{r}
-fit <- lm(BankN$y ~ BankN$age)
-r = fit$residuals
-f = fitted(fit)
-plot(f, r, pch = 18, xlab = "Fitted Values", ylab = "Residuals") + abline(h = 0, col = "red", lwd = 2)
-```
-
-```{r}
-#BBIC <- step(fit,direction="backward",scope=list(lower=~Public,upper=fit), data=X)
-```
-
-
-Before checking for assumptions, let's create a quick, simple linear regression and check the plot
-
-```{r}
-
-```
-
- 
-Step 2: Make sure our data meets the assumptions.
-  For now, lets check the four main assumptions for *linear regression*
-  
-  First Assumption: Independence of Observations
-
-```{r}
-
-```
-
-  Second Assumption: Normality
-  
-```{r}
-
+model2 = lda(trainx, trainy)
+yhat <- predict(model2, newdata=testx)$class
+table(yhat, testy)
+mean(yhat == testy) #91.26 accuracy
 ```
