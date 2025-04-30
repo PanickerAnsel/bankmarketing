@@ -28,8 +28,8 @@ library(car)
 
 
 ```{r}
-#Bank <- read.csv("C:/Users/Panic/ML/appliedregression/bankmarketing/bank-full.csv", sep = ";")
-Bank <- read.csv("C:/Users/13147/Documents/bankmarketing/bank-full.csv", sep = ";")
+Bank <- read.csv("C:/Users/Panic/ML/appliedregression/bankmarketing/bank-full.csv", sep = ";")
+#Bank <- read.csv("C:/Users/13147/Documents/bankmarketing/bank-full.csv", sep = ";")
 Bank %>% tail()
 ```
 
@@ -259,6 +259,46 @@ pcabestmodel
 ```
 
 Let's use LDA and QDA
+
+```{r}
+Bank <- Bank |>
+  dplyr::select(-contacts)
+
+BankPCA <- BankPCA |>
+  dplyr::select(-PC1, default)
+
+
+split <- initial_split(Bank, prop = 0.7)
+train <- training(split)
+test <- testing(split)
+
+trainx <- train %>% dplyr::select(-y)
+trainy <- train %>% pull(y)
+testx <- test %>% dplyr::select(-y)
+testy <- test %>% pull(y)
+
+dim(train)
+dim(test)
+
+
+pcasplit <- initial_split(BankPCA, prop = 0.7)
+pcatrain <- training(pcasplit)
+pcatest <- testing(pcasplit)
+
+pcatrainx <- pcatrain %>% dplyr::select(-y)
+pcatrainy <- pcatrain %>% pull(y)
+pcatestx <- pcatest %>% dplyr::select(-y)
+pcatesty <- pcatest %>% pull(y)
+
+dim(pcatrain)
+dim(pcatest)
+
+pcatrainx <- pcatrain %>% dplyr::select(-y)
+pcatrainy <- pcatrain %>% pull(y)
+pcatestx <- pcatest %>% dplyr::select(-y)
+pcatesty <- pcatest %>% pull(y)
+```
+
 
 ```{r}
 model1 = qda(trainx, trainy)
