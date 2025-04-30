@@ -96,9 +96,10 @@ Since the "month" variable is an ordinal variable, we can change the months to 1
 monthToNum <- c("jan" = 1, "feb" = 2, "mar" = 3, "apr" = 4, "may" = 5, "jun" = 6,
                 "jul" = 7, "aug" = 8, "sep" = 9, "oct" = 10, "nov" = 11, "dec" = 12)
 
-Bank <- Bank %>% mutate(month = as.integer(monthToNum[month]))
+Bank <- Bank %>% mutate(month = as.integer(monthToNum[month])) %>% mutate(job = factor(job), marital = factor(marital), education = factor(education), default = factor(default), housing = factor(housing), loan = factor(loan), contact = factor(contact))
 
 Bank %>% head()
+
 ```
 
 
@@ -207,6 +208,7 @@ Use Logistic regression and use AIC and BIC to select variables.
 m0 <- glm(y ~ 1, data = train, family = binomial)
 lgmodel <- glm(y ~ ., data = train, family = binomial)
 
+
 # AIC
 mAIC <- stepAIC(lgmodel,
                  scope = list(lower = m0, upper = lgmodel),
@@ -220,7 +222,7 @@ mBIC <- stepAIC(lgmodel,
                  k = kBIC, trace = FALSE)
 
 bestmodel <- if (AIC(mAIC) < AIC(mBIC)) formula(mAIC) else formula(mBIC)
-
+bestmodel
 
 pcam0 <- glm(y ~ 1, data = pcatrain, family = binomial)
 pcalgmodel <- glm(y ~ ., data = pcatrain, family = binomial)
@@ -238,13 +240,16 @@ pcamBIC <- stepAIC(pcalgmodel,
                  k = pcakBIC, trace = FALSE)
 
 pcabestmodel <- if (AIC(pcamAIC) < AIC(pcamBIC)) formula(pcamAIC) else formula(pcamBIC)
+pcabestmodel
 ```
 
 Let's use LDA and QDA
 
 ```{r}
 model1 = qda(trainx, trainy)
+model1
 yhat <- predict(model1, newdata=testx)$class
+dim(testx)
 table(yhat, testy)
 mean(yhat == testy) #83.52 accuracy
 
