@@ -28,7 +28,8 @@ library(car)
 
 
 ```{r}
-Bank <- read.csv("C:/Users/Panic/ML/appliedregression/bankmarketing/bank-full.csv", sep = ";")
+#Bank <- read.csv("C:/Users/Panic/ML/appliedregression/bankmarketing/bank-full.csv", sep = ";")
+Bank <- read.csv("C:/Users/13147/Documents/bankmarketing/bank-full.csv", sep = ";")
 Bank %>% tail()
 ```
 
@@ -78,33 +79,16 @@ p7 <- Bank %>% ggplot(aes(x = poutcome)) + geom_bar(fill = "blue")
 There are no outliers in the marital variable. The default variable does have outliers, but we predict that whether or not someone defaulted on a loan highly affects whether or not they will subscribe to a term deposit, so we will keep it. There are no outliers in the housing, loan, or contact variables. Since months are temporal, removing outliers may affect the regression model. Finally, since the poutcome variable consists mostly of unknown, we'll remove it since it provides no real information.
 
 ```{r}
-Bank
-Bank <- Bank %>% dplyr::select(-poutcome)
+Bank <- Bank %>% dplyr::select(-poutcome) %>% dummy_cols(select_columns = "y", remove_first_dummy = TRUE) %>% select(-y) %>% rename(y = y_yes)
 ```
 
 Now we need to create indicator variables for our categorical predictors
   
 ```{r}
-Bank %>% select_if(is.character) %>% dplyr::select(-y) %>% head(3)
+Bank %>% select_if(is.character) %>% head(3)
 ```
 There are 8 categorical indicators. Luckily, the fastDummies package automatically creates dummy variables for each categorical indicator. The package also allows us to remove the first dummy of every variable such that only n-1 dummies remain, avoiding multicollinearity issues in the future.
 
-```{r}
-BankN <- Bank %>% dummy_cols(select_columns = c("job", "marital", "education", "default", "housing", "loan", "contact", "y"), remove_first_dummy = TRUE) %>% dplyr::select(-c("job", "marital", "education", "default", "housing", "loan", "contact","y")) %>% as.data.frame()
-
-str(BankN)
-```
-
-Now, if we want to use a categorical variable, we'll use a preset filter that locates the relevant columns. We can even create a matrix. For example, say we want to use the *job* column. Note that if a row contains all 0 within the "job" columns, the job is "unknown"
-
-```{r}
-BankN %>% dplyr::select(starts_with("job")) %>% as.matrix() %>% head()
-```
-We rename the binary variables:
-
-```{r}
-BankN <- BankN %>% rename(default = default_yes, housingLoan = housing_yes, personalLoan = loan_yes, y = y_yes)
-```
 
 Since the "month" variable is an ordinal variable, we can change the months to 1 through 12.
 
@@ -112,25 +96,27 @@ Since the "month" variable is an ordinal variable, we can change the months to 1
 monthToNum <- c("jan" = 1, "feb" = 2, "mar" = 3, "apr" = 4, "may" = 5, "jun" = 6,
                 "jul" = 7, "aug" = 8, "sep" = 9, "oct" = 10, "nov" = 11, "dec" = 12)
 
-BankN <- BankN %>% mutate(month = as.integer(monthToNum[month]))
+Bank <- Bank %>% mutate(month = as.integer(monthToNum[month]))
+
+Bank %>% head()
 ```
 
 
 The *campaign* column is the number of contacts performed *during* this campaign and the *previous* column is the number of contacts performed *before* this campaign. Let's combine both to get the total number of contacts. Since the "pdays" column relies on both columns, we'll remove that too.
 
 ```{r}
-BankN <- BankN %>% mutate(contacts = campaign + previous) %>% dplyr::select(-c("campaign","previous", "pdays"))
+Bank <- Bank %>% mutate(contacts = campaign + previous) %>% dplyr::select(-c("previous", "pdays"))
 ```
 
 The *day* column and the *month* column are linked, so we can remove the *day* column all together. 
 
 ```{r}
-BankN <- BankN %>% dplyr::select(-day)
+Bank <- Bank %>% dplyr::select(-day)
 ```
 
 Final dataset (for now)
 ```{r}
-BankN %>% head()
+Bank %>% head()
 Bank %>% count(y)
 ```
 
@@ -139,29 +125,29 @@ Now let's look for obvious outliers within the quantitative variables:
 age, balance, duration, and pdays (# of days before last campaign contact [-1 if N/A])
 
 ```{r}
-p1 <- BankN %>% ggplot(aes(x = duration)) + geom_histogram()
-p2 <- BankN %>% ggplot(aes(x = "", y = balance)) + geom_boxplot()
-out <- boxplot.stats(BankN$balance)$out
-BankN <- BankN %>% filter(!(balance %in% out))
-p3 <- BankN %>% ggplot(aes(x = "", y = balance)) + geom_boxplot()
+p1 <- Bank %>% ggplot(aes(x = duration)) + geom_histogram()
+p2 <- Bank %>% ggplot(aes(x = "", y = balance)) + geom_boxplot()
+out <- boxplot.stats(Bank$balance)$out
+Bank <- Bank %>% filter(!(balance %in% out))
+p3 <- Bank %>% ggplot(aes(x = "", y = balance)) + geom_boxplot()
 (p1 | p2 | p3)
 
-p4 <- BankN %>% ggplot(aes(x=age)) + geom_histogram()
-p5 <- BankN %>% ggplot(aes(x = "", y = age)) + geom_boxplot()
+p4 <- Bank %>% ggplot(aes(x=age)) + geom_histogram()
+p5 <- Bank %>% ggplot(aes(x = "", y = age)) + geom_boxplot()
 (p4 | p5)
 
-p6 <- BankN %>% ggplot(aes(x = duration)) + geom_histogram()
-p7 <- BankN %>% ggplot(aes(x = "", y = duration)) + geom_boxplot()
-out <- boxplot.stats(BankN$duration)$out
-BankN <- BankN %>% filter(!(duration %in% out))
-p8 <- BankN %>% ggplot(aes(x = "", y = duration)) + geom_boxplot()
+p6 <- Bank %>% ggplot(aes(x = duration)) + geom_histogram()
+p7 <- Bank %>% ggplot(aes(x = "", y = duration)) + geom_boxplot()
+out <- boxplot.stats(Bank$duration)$out
+Bank <- Bank %>% filter(!(duration %in% out))
+p8 <- Bank %>% ggplot(aes(x = "", y = duration)) + geom_boxplot()
 (p6 | p7 | p8)
 ```
 
 Now let's make a PCA dataset to reduce dimensionality and normalize it.
 
 ```{r}
-numeric_vars <- BankN |>
+numeric_vars <- Bank |>
   dplyr::select(age, balance, duration, month)
 
 numeric_scaled <- scale(numeric_vars)
@@ -177,11 +163,10 @@ fviz_eig(pca_result, addlabels = TRUE)
 
 pca_components <- as.data.frame(pca_result$x[, 1:3])
 colnames(pca_components) <- c("PC1", "PC2", "PC3")
-BankN
-BankPCA <- BankN |>
+
+BankPCA <- Bank |>
   dplyr::select(-age, -balance, -duration, -month) |>
   bind_cols(pca_components)
-BankPCA
 ```
 
 
@@ -189,7 +174,7 @@ Let's split the data.
 
 ```{r}
 set.seed(100)
-split <- initial_split(BankN, prop = 0.7)
+split <- initial_split(Bank, prop = 0.7)
 train <- training(split)
 test <- testing(split)
 
@@ -214,9 +199,10 @@ pcatesty <- pcatest %>% pull(y)
 dim(pcatrain)
 dim(pcatest)
 ```
+
 Use Logistic regression and use AIC and BIC to select variables.
 
-```{r}
+```{r, cache=TRUE}
 
 m0 <- glm(y ~ 1, data = train, family = binomial)
 lgmodel <- glm(y ~ ., data = train, family = binomial)
@@ -235,7 +221,6 @@ mBIC <- stepAIC(lgmodel,
 
 bestmodel <- if (AIC(mAIC) < AIC(mBIC)) formula(mAIC) else formula(mBIC)
 
-bestmodel
 
 pcam0 <- glm(y ~ 1, data = pcatrain, family = binomial)
 pcalgmodel <- glm(y ~ ., data = pcatrain, family = binomial)
@@ -253,9 +238,6 @@ pcamBIC <- stepAIC(pcalgmodel,
                  k = pcakBIC, trace = FALSE)
 
 pcabestmodel <- if (AIC(pcamAIC) < AIC(pcamBIC)) formula(pcamAIC) else formula(pcamBIC)
-
-pcabestmodel
-
 ```
 
 Let's use LDA and QDA
