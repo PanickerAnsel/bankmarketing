@@ -301,6 +301,16 @@ pcatesty <- pcatest %>% pull(y)
 
 
 ```{r}
+trainx <- train[, -which(names(train) == "y")]
+trainx <- dummy_cols(trainx, remove_first_dummy = TRUE, remove_selected_columns = TRUE)
+trainy <- train$y
+testx <- dummy_cols(testx, remove_first_dummy = TRUE, remove_selected_columns = TRUE)
+testy <- test$y
+pcatrainx <- pcatrain[, -which(names(pcatrain) == "y")]
+pcatrainx <- dummy_cols(pcatrainx, remove_first_dummy = TRUE, remove_selected_columns = TRUE)
+pcatrainy <- pcatrain$y
+pcatestx <- dummy_cols(pcatestx, remove_first_dummy = TRUE, remove_selected_columns = TRUE)
+pcatesty <- pcatest$y
 model1 = qda(trainx, trainy)
 model1
 yhat <- predict(model1, newdata=testx)$class
@@ -309,7 +319,19 @@ table(yhat, testy)
 mean(yhat == testy) #83.52 accuracy
 
 model2 = lda(trainx, trainy)
+
 yhat <- predict(model2, newdata=testx)$class
 table(yhat, testy)
 mean(yhat == testy) #91.26 accuracy
+pcamodel1 = qda(pcatrainx, pcatrainy)
+pcamodel1
+pcayhat <- predict(pcamodel1, newdata=pcatestx)$class
+dim(pcatestx)
+table(pcayhat, pcatesty)
+mean(pcayhat == pcatesty) #83.52 accuracy
+
+pcamodel2 = lda(pcatrainx, pcatrainy)
+pcayhat <- predict(pcamodel2, newdata=pcatestx)$class
+table(pcayhat, pcatesty)
+mean(pcayhat == pcatesty) #91.26 accuracy
 ```
