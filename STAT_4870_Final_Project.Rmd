@@ -29,8 +29,8 @@ library(class)
 
 
 ```{r}
-#Bank <- read.csv("C:/Users/Panic/ML/appliedregression/bankmarketing/bank-full.csv", sep = ";")
-Bank <- read.csv("C:/Users/13147/Documents/bankmarketing/bank-full.csv", sep = ";")
+Bank <- read.csv("C:/Users/Panic/ML/appliedregression/bankmarketing/bank-full.csv", sep = ";")
+#Bank <- read.csv("C:/Users/13147/Documents/bankmarketing/bank-full.csv", sep = ";")
 Bank %>% tail()
 ```
 
@@ -219,7 +219,6 @@ dim(pcatest)
 Use Logistic regression and use AIC and BIC to select variables.
 
 ```{r, cache=TRUE}
-
 m0 <- glm(y ~ 1, data = train, family = binomial)
 lgmodel <- glm(y ~ ., data = train, family = binomial)
 
@@ -256,6 +255,29 @@ pcamBIC <- stepAIC(pcalgmodel,
 
 pcabestmodel <- if (AIC(pcamAIC) < AIC(pcamBIC)) formula(pcamAIC) else formula(pcamBIC)
 pcabestmodel
+
+bestmodel <- glm(y ~ age + job + marital + education + default + balance + housing + 
+    loan + contact + month + duration, data = train, family = binomial)
+
+
+pcabestmodel <- glm(y ~ job + education + housing + loan + contact + PC1 + PC2 + 
+    PC3 + PC4, data = pcatrain, family = binomial)
+```
+
+
+```{r, cache=TRUE}
+probs <- predict(bestmodel, newdata = test, type = "response")
+predicted_classes <- ifelse(probs > 0.5, 1, 0)
+actual_classes <- test$y
+accuracy <- mean(predicted_classes == actual_classes)
+print(paste("Accuracy:", round(accuracy * 100, 2), "%"))
+
+probs <- predict(pcabestmodel, newdata = pcatest, type = "response")
+predicted_classes <- ifelse(probs > 0.5, 1, 0)
+actual_classes <- test$y
+accuracy <- mean(predicted_classes == actual_classes)
+print(paste("Accuracy:", round(accuracy * 100, 2), "%"))
+
 
 ```
 
