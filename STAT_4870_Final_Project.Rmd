@@ -24,6 +24,7 @@ library(patchwork)
 library(rsample)
 library(factoextra)
 library(car)
+library(class)
 ```
 
 
@@ -266,8 +267,10 @@ Bank <- Bank |>
 
 BankPCA <- BankPCA |>
   dplyr::select(-marital, -default)
+```
 
 
+```{r}
 split <- initial_split(Bank, prop = 0.7)
 train <- training(split)
 test <- testing(split)
@@ -306,32 +309,122 @@ trainx <- dummy_cols(trainx, remove_first_dummy = TRUE, remove_selected_columns 
 trainy <- train$y
 testx <- dummy_cols(testx, remove_first_dummy = TRUE, remove_selected_columns = TRUE)
 testy <- test$y
+
+
 pcatrainx <- pcatrain[, -which(names(pcatrain) == "y")]
 pcatrainx <- dummy_cols(pcatrainx, remove_first_dummy = TRUE, remove_selected_columns = TRUE)
 pcatrainy <- pcatrain$y
 pcatestx <- dummy_cols(pcatestx, remove_first_dummy = TRUE, remove_selected_columns = TRUE)
 pcatesty <- pcatest$y
+```
+
+
+```{r}
 model1 = qda(trainx, trainy)
-model1
 yhat <- predict(model1, newdata=testx)$class
-dim(testx)
-table(yhat, testy)
-mean(yhat == testy) #83.52 accuracy
+hm <- as.data.frame(table(yhat, testy))
 
+ggplot(hm, aes(x = yhat, y = testy, fill = Freq)) +
+  geom_tile() + theme_bw() + coord_equal() +
+  scale_fill_distiller(palette = "Blues", direction = 1) +
+  guides(fill = FALSE) +
+  geom_text(aes(label = Freq), color = "black", size = 10) +
+  # following lines only increase text size (optional)
+  theme(axis.text.x = element_text(size = 20),
+      axis.text.y = element_text(size = 20),
+      axis.title.x = element_text(size = 30),
+      axis.title.y = element_text(size = 30))
+
+mean(yhat == testy) #84.36 accuracy
+```
+
+
+```{r}
 model2 = lda(trainx, trainy)
-
 yhat <- predict(model2, newdata=testx)$class
-table(yhat, testy)
-mean(yhat == testy) #91.26 accuracy
-pcamodel1 = qda(pcatrainx, pcatrainy)
-pcamodel1
-pcayhat <- predict(pcamodel1, newdata=pcatestx)$class
-dim(pcatestx)
-table(pcayhat, pcatesty)
-mean(pcayhat == pcatesty) #83.52 accuracy
+hm <- as.data.frame(table(yhat, testy))
 
+ggplot(hm, aes(x = yhat, y = testy, fill = Freq)) +
+  geom_tile() + theme_bw() + coord_equal() +
+  scale_fill_distiller(palette = "Blues", direction = 1) +
+  guides(fill = FALSE) +
+  geom_text(aes(label = Freq), color = "black", size = 10) +
+  # following lines only increase text size (optional)
+  theme(axis.text.x = element_text(size = 20),
+      axis.text.y = element_text(size = 20),
+      axis.title.x = element_text(size = 30),
+      axis.title.y = element_text(size = 30))
+
+mean(yhat == testy) #90.88 accuracy
+```
+
+
+```{r}
+pcamodel1 = qda(pcatrainx, pcatrainy)
+pcayhat <- predict(pcamodel1, newdata=pcatestx)$class
+hm <- as.data.frame(table(pcayhat, pcatesty))
+
+ggplot(hm, aes(x = pcayhat, y = pcatesty, fill = Freq)) +
+  geom_tile() + theme_bw() + coord_equal() +
+  scale_fill_distiller(palette = "Blues", direction = 1) +
+  guides(fill = FALSE) +
+  geom_text(aes(label = Freq), color = "black", size = 10) +
+  # following lines only increase text size (optional)
+  theme(axis.text.x = element_text(size = 20),
+      axis.text.y = element_text(size = 20),
+      axis.title.x = element_text(size = 30),
+      axis.title.y = element_text(size = 30))
+
+mean(pcayhat == pcatesty) #85.027 accuracy
+```
+
+
+```{r}
 pcamodel2 = lda(pcatrainx, pcatrainy)
 pcayhat <- predict(pcamodel2, newdata=pcatestx)$class
-table(pcayhat, pcatesty)
-mean(pcayhat == pcatesty) #91.26 accuracy
+hm <- as.data.frame(table(pcayhat, pcatesty))
+
+ggplot(hm, aes(x = pcayhat, y = pcatesty, fill = Freq)) +
+  geom_tile() + theme_bw() + coord_equal() +
+  scale_fill_distiller(palette = "Blues", direction = 1) +
+  guides(fill = FALSE) +
+  geom_text(aes(label = Freq), color = "black", size = 10) +
+  # following lines only increase text size (optional)
+  theme(axis.text.x = element_text(size = 20),
+      axis.text.y = element_text(size = 20),
+      axis.title.x = element_text(size = 30),
+      axis.title.y = element_text(size = 30))
+
+mean(pcayhat == pcatesty) #91.62 accuracy
 ```
+
+
+#Next is kNN
+
+```{r, cache = TRUE}
+m = 10; error = rep(0,m)
+for (i in 1:m) {
+  error[i] = sum(trainy != knn.cv(trainx, trainy, i))/length(trainy)
+}
+
+index = which(error == min(error)); index # Note, you might get different number due to random samples.
+
+yhat = knn(train=trainx, cl=trainy, test=testx, k = index[1])
+table(yhat, testy)
+
+hm <- as.data.frame(table(yhat, testy))
+
+ggplot(hm, aes(x = yhat, y = testy, fill = Freq)) +
+  geom_tile() + theme_bw() + coord_equal() +
+  scale_fill_distiller(palette = "Blues", direction = 1) +
+  guides(fill = FALSE) +
+  geom_text(aes(label = Freq), color = "black", size = 10) +
+  # following lines only increase text size (optional)
+  theme(axis.text.x = element_text(size = 20),
+      axis.text.y = element_text(size = 20),
+      axis.title.x = element_text(size = 30),
+      axis.title.y = element_text(size = 30))
+
+mean(yhat == testy) #86.95 accuracy
+```
+
