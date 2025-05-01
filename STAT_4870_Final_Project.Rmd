@@ -28,8 +28,8 @@ library(car)
 
 
 ```{r}
-Bank <- read.csv("C:/Users/Panic/ML/appliedregression/bankmarketing/bank-full.csv", sep = ";")
-#Bank <- read.csv("C:/Users/13147/Documents/bankmarketing/bank-full.csv", sep = ";")
+#Bank <- read.csv("C:/Users/Panic/ML/appliedregression/bankmarketing/bank-full.csv", sep = ";")
+Bank <- read.csv("C:/Users/13147/Documents/bankmarketing/bank-full.csv", sep = ";")
 Bank %>% tail()
 ```
 
@@ -112,7 +112,7 @@ table(Bank$education, Bank$y)
 The *campaign* column is the number of contacts performed *during* this campaign and the *previous* column is the number of contacts performed *before* this campaign. Let's combine both to get the total number of contacts. Since the "pdays" column relies on both columns, we'll remove that too.
 
 ```{r}
-Bank <- Bank %>% mutate(contacts = campaign + previous) %>% dplyr::select(-c("previous", "pdays","campaign"))
+Bank <- Bank %>% mutate(calls = campaign + previous) %>% dplyr::select(-c("previous", "pdays","campaign"))
 ```
 
 The *day* column and the *month* column are linked, so we can remove the *day* column all together. 
@@ -156,8 +156,9 @@ Now let's make a PCA dataset to reduce dimensionality and normalize it.
 
 ```{r}
 numeric_vars <- Bank |>
-  dplyr::select(age, balance, duration, month)
+  dplyr::select(age, balance, duration, month, calls)
 
+Bank
 numeric_scaled <- scale(numeric_vars)
 
 pca_result <- prcomp(numeric_scaled, center = TRUE, scale. = TRUE)
@@ -169,12 +170,11 @@ library(factoextra)
 #Show explained variance %
 fviz_eig(pca_result, addlabels = TRUE)
 
-pca_components <- as.data.frame(pca_result$x[, 1:3])
-colnames(pca_components) <- c("PC1", "PC2", "PC3")
+pca_components <- as.data.frame(pca_result$x[, 1:4])
+colnames(pca_components) <- c("PC1", "PC2", "PC3","PC4")
 
-Bank
 BankPCA <- Bank |>
-  dplyr::select(-age, -balance, -duration, -month) |>
+  dplyr::select(-age, -balance, -duration, -month, -calls) |>
   bind_cols(pca_components)
 
 #BankPCA <- Bank |> filter(contact != "unknown", education != "unknown") %>%
@@ -262,10 +262,10 @@ Let's use LDA and QDA
 
 ```{r}
 Bank <- Bank |>
-  dplyr::select(-contacts)
+  dplyr::select(-calls)
 
 BankPCA <- BankPCA |>
-  dplyr::select(-PC1, default)
+  dplyr::select(-marital, -default)
 
 
 split <- initial_split(Bank, prop = 0.7)
