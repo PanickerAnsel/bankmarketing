@@ -450,3 +450,35 @@ ggplot(hm, aes(x = yhat, y = testy, fill = Freq)) +
 mean(yhat == testy) #86.95 accuracy
 ```
 
+#KNN with PCA
+
+```{r, cache= TRUE}
+m = 10; error = rep(0,m)
+for (i in 1:m) {
+  error[i] = sum(pcatrainy != knn.cv(pcatrainx, pcatrainy, i))/length(pcatrainy)
+}
+```
+
+```{r}
+plot(1:m,error,type="l",lwd=3, xlab="k",ylab="error")
+
+index = which(error == min(error)); index
+
+pcayhat = knn(train=pcatrainx, cl=pcatrainy, test=pcatestx, k = index[1])
+table(pcayhat, pcatesty)
+
+hm <- as.data.frame(table(pcayhat, pcatesty))
+
+ggplot(hm, aes(x = pcayhat, y = pcatesty, fill = Freq)) +
+  geom_tile() + theme_bw() + coord_equal() +
+  scale_fill_distiller(palette = "Blues", direction = 1) +
+  guides(fill = FALSE) +
+  geom_text(aes(label = Freq), color = "black", size = 10) +
+  # following lines only increase text size (optional)
+  theme(axis.text.x = element_text(size = 20),
+      axis.text.y = element_text(size = 20),
+      axis.title.x = element_text(size = 30),
+      axis.title.y = element_text(size = 30))
+
+mean(pcayhat == pcatesty) #91.58 accuracy
+```
