@@ -21,8 +21,8 @@ library(smotefamily)
 
 
 ```{r}
-#Bank <- read.csv("C:/Users/Panic/ML/appliedregression/bankmarketing/bank-full.csv", sep = ";")
-Bank <- read.csv("C:/Users/13147/Documents/bankmarketing/bank-full.csv", sep = ";")
+Bank <- read.csv("C:/Users/Panic/ML/appliedregression/bankmarketing/bank-full.csv", sep = ";")
+#Bank <- read.csv("C:/Users/13147/Documents/bankmarketing/bank-full.csv", sep = ";")
 Bank %>% tail()
 ```
 
@@ -181,10 +181,6 @@ trainx <- train %>% dplyr::select(-y)
 trainy <- train %>% pull(y)
 testx <- test %>% dplyr::select(-y)
 testy <- test %>% pull(y)
-strainy <- SMOTE(y ~ ., 
-                     data      = train, 
-                     perc.over = 200,   # create 200% more of the minority class
-                     perc.under= 150)
 table(trainy)
 dim(train)
 dim(test)
@@ -347,9 +343,9 @@ trainy <- train %>% pull(y)
 testx <- test %>% dplyr::select(-y)
 testy <- test %>% pull(y)
 
-rtrainx <- train %>% dplyr::select(-y, age, job, balance, month, duration, calls) |> dummy_cols( remove_first_dummy = TRUE, remove_selected_columns = TRUE)
+rtrainx <- train %>% dplyr::select(-c(y, age, job, balance, month, duration, calls)) |> dummy_cols( remove_first_dummy = TRUE, remove_selected_columns = TRUE)
 rtrainy <- train %>% pull(y)
-rtestx <- test %>% dplyr::select(-y, age, job, balance, month, duration, calls) |> dummy_cols( remove_first_dummy = TRUE, remove_selected_columns = TRUE)
+rtestx <- test %>% dplyr::select(-c(y, age, job, balance, month, duration, calls)) |> dummy_cols( remove_first_dummy = TRUE, remove_selected_columns = TRUE)
 rtesty <- test %>% pull(y)
 
 dim(train)
