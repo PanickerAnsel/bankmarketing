@@ -15,6 +15,7 @@ library(rsample)
 library(factoextra)
 library(car)
 library(class)
+library(glmnet)
 ```
 
 
@@ -143,7 +144,6 @@ Now let's make a PCA dataset to reduce dimensionality and normalize it.
 numeric_vars <- Bank |>
   dplyr::select(age, balance, duration, month, calls)
 
-Bank
 numeric_scaled <- scale(numeric_vars)
 
 pca_result <- prcomp(numeric_scaled, center = TRUE, scale. = TRUE)
@@ -304,8 +304,23 @@ mean(yhat == testy)
 Let's use LDA and QDA
 
 ```{r}
+cv.out=cv.glmnet(trainx %>% as.matrix(), trainy, alpha=1)
+bestlamL=cv.out$lambda.min; bestlamL
 
+cv.out=cv.glmnet(trainx %>% as.matrix(), trainy, alpha=0)
+bestlamR=cv.out$lambda.min; bestlamR
 
+out = glmnet(x = trainx, y = trainy, alpha = 0)
+summary(out)
+ridgeC = predict(out, type="coefficients",s = bestlamR)
+ridgeC
+#Lose: age, job, Balance, month, duration, calls
+
+out = glmnet(x = trainx, y = trainy, alpha = 1)
+summary(out)
+lassoC = predict(out, type="coefficients",s = bestlamL)
+lassoC
+#Lose: age, job, default, month, calls
 ```
 
 
