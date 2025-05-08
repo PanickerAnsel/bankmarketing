@@ -16,6 +16,7 @@ library(factoextra)
 library(car)
 library(class)
 library(glmnet)
+library(smotefamily)
 ```
 
 
@@ -166,8 +167,6 @@ BankPCA <- Bank |>
 #  dplyr::select(-age, -balance, -duration, -month) |>
 #  bind_cols(pca_components)
 
-Bank|> filter(y==1) 2387
-Bank|> filter(y==0) 31445
 ```
 
 Let's split the data. 
@@ -182,7 +181,11 @@ trainx <- train %>% dplyr::select(-y)
 trainy <- train %>% pull(y)
 testx <- test %>% dplyr::select(-y)
 testy <- test %>% pull(y)
-
+strainy <- SMOTE(y ~ ., 
+                     data      = train, 
+                     perc.over = 200,   # create 200% more of the minority class
+                     perc.under= 150)
+table(trainy)
 dim(train)
 dim(test)
 
@@ -256,13 +259,21 @@ probs <- predict(bestmodel, newdata = test, type = "response")
 predicted_classes <- ifelse(probs > 0.5, 1, 0)
 actual_classes <- test$y
 accuracy <- mean(predicted_classes == actual_classes)
+precision <- sum(predicted_classes & actual_classes) / sum(predicted_classes)
+recall <- sum(predicted_classes & actual_classes) / sum(actual_classes)
 print(paste("Accuracy:", round(accuracy * 100, 2), "%"))
+print(paste("Precision:", round(precision * 100, 2), "%"))
+print(paste("Recall:", round(recall * 100, 2), "%"))
 
 probs <- predict(pcabestmodel, newdata = pcatest, type = "response")
 predicted_classes <- ifelse(probs > 0.5, 1, 0)
-actual_classes <- test$y
+actual_classes <- pcatest$y
 accuracy <- mean(predicted_classes == actual_classes)
+precision <- sum(predicted_classes & actual_classes) / sum(predicted_classes)
+recall <- sum(predicted_classes & actual_classes) / sum(actual_classes)
 print(paste("Accuracy:", round(accuracy * 100, 2), "%"))
+print(paste("Precision:", round(precision * 100, 2), "%"))
+print(paste("Recall:", round(recall * 100, 2), "%"))
 
 
 yhat <- ifelse(predict(bestmodel, newdata = testx, type = "response") > 0.5, 1, 0)
@@ -395,7 +406,19 @@ ggplot(hm, aes(x = yhat, y = testy, fill = Freq)) +
       axis.title.x = element_text(size = 30),
       axis.title.y = element_text(size = 30))
 
-mean(yhat == testy) #84.36 accuracy
+tp   <- sum(yhat == "1" & testy == "1")    # true positives
+pred <- sum(yhat == "1")                    # predicted positives
+act  <- sum(testy == "1")                   # actual positives
+
+precision <- tp / pred
+recall    <- tp / act
+accuracy  <- mean(yhat == testy)
+
+cat(
+  sprintf("Accuracy:  %.2f%%\n", accuracy*100),
+  sprintf("Precision: %.2f%%\n", precision*100),
+  sprintf("Recall:    %.2f%%\n", recall*100)
+)
 ```
 
 
@@ -415,7 +438,19 @@ ggplot(hm, aes(x = yhat, y = testy, fill = Freq)) +
       axis.title.x = element_text(size = 30),
       axis.title.y = element_text(size = 30))
 
-mean(yhat == testy) #90.88 accuracy
+tp   <- sum(yhat == "1" & testy == "1")    # true positives
+pred <- sum(yhat == "1")                    # predicted positives
+act  <- sum(testy == "1")                   # actual positives
+
+precision <- tp / pred
+recall    <- tp / act
+accuracy  <- mean(yhat == testy)
+
+cat(
+  sprintf("Accuracy:  %.2f%%\n", accuracy*100),
+  sprintf("Precision: %.2f%%\n", precision*100),
+  sprintf("Recall:    %.2f%%\n", recall*100)
+)
 ```
 
 
@@ -435,7 +470,19 @@ ggplot(hm, aes(x = ryhat, y = rtesty, fill = Freq)) +
       axis.title.x = element_text(size = 30),
       axis.title.y = element_text(size = 30))
 
-mean(ryhat == rtesty) #85.027 accuracy #84.349 accuracy
+tp   <- sum(ryhat == "1" & rtesty == "1")    # true positives
+pred <- sum(ryhat == "1")                    # predicted positives
+act  <- sum(rtesty == "1")                   # actual positives
+
+precision <- tp / pred
+recall    <- tp / act
+accuracy  <- mean(ryhat == rtesty)
+
+cat(
+  sprintf("Accuracy:  %.2f%%\n", accuracy*100),
+  sprintf("Precision: %.2f%%\n", precision*100),
+  sprintf("Recall:    %.2f%%\n", recall*100)
+)
 ```
 
 
@@ -455,7 +502,20 @@ ggplot(hm, aes(x = ryhat, y = rtesty, fill = Freq)) +
       axis.title.x = element_text(size = 30),
       axis.title.y = element_text(size = 30))
 
-mean(ryhat == rtesty) #91.62 accuracy #91.27
+tp   <- sum(ryhat == "1" & rtesty == "1")    # true positives
+pred <- sum(ryhat == "1")                    # predicted positives
+act  <- sum(rtesty == "1")                   # actual positives
+
+precision <- tp / pred
+recall    <- tp / act
+accuracy  <- mean(ryhat == rtesty)
+
+cat(
+  sprintf("Accuracy:  %.2f%%\n", accuracy*100),
+  sprintf("Precision: %.2f%%\n", precision*100),
+  sprintf("Recall:    %.2f%%\n", recall*100)
+)
+
 ```
 
 
@@ -485,10 +545,22 @@ ggplot(hm, aes(x = yhat, y = testy, fill = Freq)) +
       axis.title.x = element_text(size = 30),
       axis.title.y = element_text(size = 30))
 
-mean(yhat == testy) #86.95 accuracy
-```
+tp   <- sum(yhat == "1" & testy == "1")    # true positives
+pred <- sum(yhat == "1")                    # predicted positives
+act  <- sum(testy == "1")                   # actual positives
+
+precision <- tp / pred
+recall    <- tp / act
+accuracy  <- mean(yhat == testy)
+
+cat(
+  sprintf("Accuracy:  %.2f%%\n", accuracy*100),
+  sprintf("Precision: %.2f%%\n", precision*100),
+  sprintf("Recall:    %.2f%%\n", recall*100)
+)
 
 #KNN with PCA
+```
 
 ```{r, cache= TRUE}
 m = 10; error = rep(0,m)
@@ -518,5 +590,17 @@ ggplot(hm, aes(x = pcayhat, y = pcatesty, fill = Freq)) +
       axis.title.x = element_text(size = 30),
       axis.title.y = element_text(size = 30))
 
-mean(pcayhat == pcatesty) #91.58 accuracy
+tp   <- sum(pcayhat == "1" & testy == "1")    # true positives
+pred <- sum(pcayhat == "1")                   # predicted positives
+act  <- sum(pcatesty == "1")                   # actual positives
+
+precision <- tp / pred
+recall    <- tp / act
+accuracy  <- mean(pcayhat == pcatesty)
+
+cat(
+  sprintf("Accuracy:  %.2f%%\n", accuracy*100),
+  sprintf("Precision: %.2f%%\n", precision*100),
+  sprintf("Recall:    %.2f%%\n", recall*100)
+)
 ```
