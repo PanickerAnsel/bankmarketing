@@ -182,7 +182,8 @@ BankPCA <- Bank |>
 #  dplyr::select(-age, -balance, -duration, -month) |>
 #  bind_cols(pca_components)
 
-
+Bank|> filter(y==1) 2387
+Bank|> filter(y==0) 31445
 ```
 
 
@@ -262,6 +263,8 @@ bestmodel <- glm(y ~ age + job + marital + education + default + balance + housi
 
 pcabestmodel <- glm(y ~ job + education + housing + loan + contact + PC1 + PC2 + 
     PC3 + PC4, data = pcatrain, family = binomial)
+BankPCA
+
 ```
 
 
@@ -279,16 +282,47 @@ accuracy <- mean(predicted_classes == actual_classes)
 print(paste("Accuracy:", round(accuracy * 100, 2), "%"))
 
 
+yhat <- ifelse(predict(bestmodel, newdata = testx, type = "response") > 0.5, 1, 0)
+
+hm <- as.data.frame(table(yhat, testy))
+
+ggplot(hm, aes(x = yhat, y = testy, fill = Freq)) +
+  geom_tile() + theme_bw() + coord_equal() +
+  scale_fill_distiller(palette = "Blues", direction = 1) +
+  guides(fill = FALSE) +
+  geom_text(aes(label = Freq), color = "black", size = 10) +
+  # following lines only increase text size (optional)
+  theme(axis.text.x = element_text(size = 20),
+      axis.text.y = element_text(size = 20),
+      axis.title.x = element_text(size = 30),
+      axis.title.y = element_text(size = 30))
+
+mean(yhat == testy)
+
+yhat <- ifelse(predict(pcabestmodel, newdata = pcatest, type = "response") > 0.5, 1, 0)
+
+hm <- as.data.frame(table(yhat, testy))
+
+ggplot(hm, aes(x = yhat, y = testy, fill = Freq)) +
+  geom_tile() + theme_bw() + coord_equal() +
+  scale_fill_distiller(palette = "Blues", direction = 1) +
+  guides(fill = FALSE) +
+  geom_text(aes(label = Freq), color = "black", size = 10) +
+  theme(axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 20),
+        axis.title.x = element_text(size = 30),
+        axis.title.y = element_text(size = 30))
+
+mean(yhat == testy)
+
+
 ```
 
 Let's use LDA and QDA
 
 ```{r}
-Bank <- Bank |>
-  dplyr::select(-calls)
 
-BankPCA <- BankPCA |>
-  dplyr::select(-marital, -default)
+
 ```
 
 
