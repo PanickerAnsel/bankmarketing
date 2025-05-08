@@ -1,19 +1,9 @@
 ---
 title: "STAT_4870_Project"
-author: "Waleed Abdulla"
+author: "Ansel Panicker, Waleed Abdulla"
 date: "2025-04-17"
 output: html_document
 ---
-
-#Simple/Multiple Lin Reg doesn't count but can be used for comparison
-#PCA
-#AIC
-#BIC
-#Log Regression
-#QDA/LDA
-#kNN
-
-New Libraries: fastDummies, patchwork
 
 Libraries
 ```{r, include=FALSE}
@@ -29,8 +19,8 @@ library(class)
 
 
 ```{r}
-Bank <- read.csv("C:/Users/Panic/ML/appliedregression/bankmarketing/bank-full.csv", sep = ";")
-#Bank <- read.csv("C:/Users/13147/Documents/bankmarketing/bank-full.csv", sep = ";")
+#Bank <- read.csv("C:/Users/Panic/ML/appliedregression/bankmarketing/bank-full.csv", sep = ";")
+Bank <- read.csv("C:/Users/13147/Documents/bankmarketing/bank-full.csv", sep = ";")
 Bank %>% tail()
 ```
 
@@ -83,30 +73,24 @@ There are no outliers in the marital variable. The default variable does have ou
 Bank <- Bank %>% dplyr::select(-poutcome) %>% dummy_cols(select_columns = "y", remove_first_dummy = TRUE) %>% select(-y) %>% rename(y = y_yes)
 ```
 
-Now we need to create indicator variables for our categorical predictors
-  
-```{r}
-Bank %>% select_if(is.character) %>% head(3)
-```
-
-There are 8 categorical indicators. Luckily, the fastDummies package automatically creates dummy variables for each categorical indicator. The package also allows us to remove the first dummy of every variable such that only n-1 dummies remain, avoiding multicollinearity issues in the future.
-
-
 Since the "month" variable is an ordinal variable, we can change the months to 1 through 12.
 
 ```{r}
 monthToNum <- c("jan" = 1, "feb" = 2, "mar" = 3, "apr" = 4, "may" = 5, "jun" = 6,
                 "jul" = 7, "aug" = 8, "sep" = 9, "oct" = 10, "nov" = 11, "dec" = 12)
 
-Bank <- Bank %>% mutate(month = as.integer(monthToNum[month])) %>% mutate(job = factor(job), marital = factor(marital), education = factor(education), default = factor(default), housing = factor(housing), loan = factor(loan), contact = factor(contact))
+Bank <- Bank %>% mutate(month = as.integer(monthToNum[month]), job = factor(job), marital = factor(marital), education = factor(education),
+                        default = factor(default), housing = factor(housing), loan = factor(loan), contact = factor(contact))
+```
 
+
+```{r, include=FALSE}
 table(Bank$default, Bank$y)
 table(Bank$job, Bank$y)
 table(Bank$housing, Bank$y)
 table(Bank$loan, Bank$y)
 table(Bank$contact, Bank$y)
 table(Bank$education, Bank$y)
-
 ```
 
 
@@ -134,7 +118,7 @@ Now let's look for obvious outliers within the quantitative variables:
 age, balance, duration, and pdays (# of days before last campaign contact [-1 if N/A])
 
 ```{r}
-p1 <- Bank %>% ggplot(aes(x = duration)) + geom_histogram()
+p1 <- Bank %>% ggplot(aes(x = balance)) + geom_histogram()
 p2 <- Bank %>% ggplot(aes(x = "", y = balance)) + geom_boxplot()
 out <- boxplot.stats(Bank$balance)$out
 Bank <- Bank %>% filter(!(balance %in% out))
@@ -185,7 +169,6 @@ BankPCA <- Bank |>
 Bank|> filter(y==1) 2387
 Bank|> filter(y==0) 31445
 ```
-
 
 Let's split the data. 
 
