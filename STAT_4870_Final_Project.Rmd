@@ -320,9 +320,11 @@ out = glmnet(x = trainx, y = trainy, alpha = 1)
 summary(out)
 lassoC = predict(out, type="coefficients",s = bestlamL)
 lassoC
-#Lose: age, job, default, month, calls
+#Lose: nothing
 ```
 
+```{r}
+```
 
 ```{r}
 split <- initial_split(Bank, prop = 0.7)
@@ -333,6 +335,11 @@ trainx <- train %>% dplyr::select(-y)
 trainy <- train %>% pull(y)
 testx <- test %>% dplyr::select(-y)
 testy <- test %>% pull(y)
+
+rtrainx <- train %>% dplyr::select(-y, age, job, balance, month, duration, calls) |> dummy_cols( remove_first_dummy = TRUE, remove_selected_columns = TRUE)
+rtrainy <- train %>% pull(y)
+rtestx <- test %>% dplyr::select(-y, age, job, balance, month, duration, calls) |> dummy_cols( remove_first_dummy = TRUE, remove_selected_columns = TRUE)
+rtesty <- test %>% pull(y)
 
 dim(train)
 dim(test)
@@ -363,7 +370,6 @@ trainx <- dummy_cols(trainx, remove_first_dummy = TRUE, remove_selected_columns 
 trainy <- train$y
 testx <- dummy_cols(testx, remove_first_dummy = TRUE, remove_selected_columns = TRUE)
 testy <- test$y
-
 
 pcatrainx <- pcatrain[, -which(names(pcatrain) == "y")]
 pcatrainx <- dummy_cols(pcatrainx, remove_first_dummy = TRUE, remove_selected_columns = TRUE)
@@ -414,11 +420,11 @@ mean(yhat == testy) #90.88 accuracy
 
 
 ```{r}
-pcamodel1 = qda(pcatrainx, pcatrainy)
-pcayhat <- predict(pcamodel1, newdata=pcatestx)$class
-hm <- as.data.frame(table(pcayhat, pcatesty))
+rmodel1 = qda(rtrainx, rtrainy)
+ryhat <- predict(rmodel1, newdata=rtestx)$class
+hm <- as.data.frame(table(ryhat, rtesty))
 
-ggplot(hm, aes(x = pcayhat, y = pcatesty, fill = Freq)) +
+ggplot(hm, aes(x = ryhat, y = rtesty, fill = Freq)) +
   geom_tile() + theme_bw() + coord_equal() +
   scale_fill_distiller(palette = "Blues", direction = 1) +
   guides(fill = FALSE) +
@@ -429,16 +435,16 @@ ggplot(hm, aes(x = pcayhat, y = pcatesty, fill = Freq)) +
       axis.title.x = element_text(size = 30),
       axis.title.y = element_text(size = 30))
 
-mean(pcayhat == pcatesty) #85.027 accuracy
+mean(ryhat == rtesty) #85.027 accuracy #84.349 accuracy
 ```
 
 
 ```{r}
-pcamodel2 = lda(pcatrainx, pcatrainy)
-pcayhat <- predict(pcamodel2, newdata=pcatestx)$class
-hm <- as.data.frame(table(pcayhat, pcatesty))
+rmodel2 = lda(rtrainx, rtrainy)
+ryhat <- predict(rmodel2, newdata=rtestx)$class
+hm <- as.data.frame(table(ryhat, rtesty))
 
-ggplot(hm, aes(x = pcayhat, y = pcatesty, fill = Freq)) +
+ggplot(hm, aes(x = ryhat, y = rtesty, fill = Freq)) +
   geom_tile() + theme_bw() + coord_equal() +
   scale_fill_distiller(palette = "Blues", direction = 1) +
   guides(fill = FALSE) +
@@ -449,7 +455,7 @@ ggplot(hm, aes(x = pcayhat, y = pcatesty, fill = Freq)) +
       axis.title.x = element_text(size = 30),
       axis.title.y = element_text(size = 30))
 
-mean(pcayhat == pcatesty) #91.62 accuracy
+mean(ryhat == rtesty) #91.62 accuracy #91.27
 ```
 
 
