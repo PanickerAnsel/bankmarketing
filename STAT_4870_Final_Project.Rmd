@@ -483,7 +483,7 @@ cat(
 
 
 ```{r}
-rmodel2 = lda(rtrainx, rtrainy)
+rmodel2 <- lda(rtrainx, rtrainy)
 ryhat <- predict(rmodel2, newdata=rtestx)$class
 hm <- as.data.frame(table(ryhat, rtesty))
 
@@ -554,8 +554,35 @@ cat(
   sprintf("Precision: %.2f%%\n", precision*100),
   sprintf("Recall:    %.2f%%\n", recall*100)
 )
+library(ggplot2)
 
-#KNN with PCA
+# Turn into a data frame for ggplot
+error_df <- data.frame(
+  k     = 1:m,
+  error = error
+)
+
+ggplot(error_df, aes(x = k, y = error)) +
+  geom_line() +
+  geom_point() +
+  geom_vline(xintercept = which.min(error),
+             linetype   = "dashed",
+             color      = "red") +
+  annotate("text",
+           x    = which.min(error),
+           y    = min(error),
+           label= paste("best k =", which.min(error)),
+           hjust= -0.1, vjust = 1.5,
+           color= "red") +
+  labs(
+    title = "kNN CV Error Curve",
+    x     = "Number of Neighbors (k)",
+    y     = "CV Misclassification Rate"
+  ) +
+  theme_minimal()
+
+
+
 ```
 
 ```{r, cache= TRUE}
